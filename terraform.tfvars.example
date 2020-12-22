@@ -51,6 +51,9 @@ docker_root = ""
 #k8s_version = "v1.12.0-rancher1-1"
 k8s_version = ""
 
+# Enable Windows cluster
+windows_prefered_cluster = "false"
+
 # Droplet sizes
 all_size = "s-2vcpu-4gb"
 

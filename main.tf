@@ -99,6 +99,10 @@ variable "k8s_version" {
   default = ""
 }
 
+variable "windows_prefered_cluster" {
+  default = "false"
+}
+
 variable "image_server" {
   default = "ubuntu-20-04-x64"
 }
@@ -206,14 +210,15 @@ data "template_file" "userdata_server" {
   template = file("files/userdata_server")
 
   vars = {
-    admin_password        = var.admin_password
-    cluster_name          = var.cluster_name
-    docker_version_server = var.docker_version_server
-    docker_root           = var.docker_root
-    rancher_version       = var.rancher_version
-    rancher_args          = var.rancher_args
-    k8s_version           = var.k8s_version
-    audit_level           = var.audit_level
+    admin_password           = var.admin_password
+    cluster_name             = var.cluster_name
+    docker_version_server    = var.docker_version_server
+    docker_root              = var.docker_root
+    rancher_version          = var.rancher_version
+    rancher_args             = var.rancher_args
+    k8s_version              = var.k8s_version
+    audit_level              = var.audit_level
+    windows_prefered_cluster = var.windows_prefered_cluster
   }
 }
 
