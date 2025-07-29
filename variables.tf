@@ -173,3 +173,37 @@ variable "kernel_nf_conntrack_max" {
 variable "ssh_keys" {
   default = []
 }
+
+variable "hardening" {
+  description = "Enable CIS hardening"
+  type        = bool
+  default     = false
+}
+
+variable "profile" {
+  description = "Security profile for hardening (e.g., cis, cis-1.23)"
+  type        = string
+  default     = ""
+
+  validation {
+    condition = (
+      (!var.hardening && var.profile == "") ||
+      (var.hardening && contains(["cis", "cis-1.23"], var.profile))
+    )
+    error_message = "If hardening is enabled, profile must be one of [\"cis\", \"cis-1.23\"]. Otherwise, it must be empty."
+  }
+}
+
+variable "psact" {
+  description = "PodSecurityAdmissionConfigurationTemplateName (e.g., rancher-restricted). Required only if hardening is enabled."
+  type        = string
+  default     = ""
+
+  validation {
+    condition = (
+      (!var.hardening && var.psact == "") ||
+      (var.hardening && var.psact != "")
+    )
+    error_message = "If hardening is enabled, psact must be set (e.g., rancher-restricted). Otherwise, leave it empty."
+  }
+}

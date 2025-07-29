@@ -27,7 +27,7 @@ region_server = "lon1"
 region_agent = "lon1"
 
 # Count of RKE1 custom cluster nodes with all roles
-count_agent_all_nodes = "3"
+count_agent_all_nodes = "1"
 
 # Count of RKE1 custom cluster nodes with etcd and controlplane roles
 count_agent_master_nodes = "0"
@@ -45,7 +45,7 @@ count_agent_worker_nodes = "0"
 count_tools_nodes = "0"
 
 # Count of RKE2 custom cluster nodes with all roles
-count_rke2_agent_all_nodes = "0"
+count_rke2_agent_all_nodes = "1"
 
 # Count of RKE2 custom cluster nodes with etcd and controlplane roles
 count_rke2_agent_master_nodes = "0"
@@ -113,6 +113,15 @@ user_tools = "root"
 
 ## Kernel parameters for server
 kernel_nf_conntrack_max = "131072"
+
+## Hardening RKE2 Downstream cluster 
+hardening = ""
+
+## Hardening profile (possible values are cis or cis-1.23)
+profile = ""
+
+## defaultPodSecurityAdmissionConfigurationTemplateName (possible values are null, rancher-privileged, rancher-restricted)
+psact = ""
 
 # DigitalOcean ssh-keyid
 # ssh_keys = [ "your_key_id" ]

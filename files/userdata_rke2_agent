@@ -4,6 +4,23 @@ export rancher_server_ip='${server_address}'
 apt -y install curl || true
 snap install jq || true
 
+%{ if hardening }
+# === Begin CIS Hardening ===
+echo "[HARDENING] Creating etcd user..."
+useradd -r -c "etcd user" -s /sbin/nologin -M etcd -U || true
+
+echo "[HARDENING] Configuring sysctl for kubelet..."
+cat <<SYSCTL | tee /etc/sysctl.d/90-kubelet.conf
+vm.panic_on_oom=0
+vm.overcommit_memory=1
+kernel.panic=10
+kernel.panic_on_oops=1
+SYSCTL
+
+sysctl -p /etc/sysctl.d/90-kubelet.conf
+# === End CIS Hardening ===
+%{ endif }
+
 while true; do
   curl -sLk https://$rancher_server_ip/ping && sleep 15 && break
   sleep 5

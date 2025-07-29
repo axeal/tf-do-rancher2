@@ -39,6 +39,9 @@ resource "digitalocean_droplet" "rancherserver" {
     rke2_cni                = var.rke2_cni
     audit_level             = var.audit_level
     kernel_nf_conntrack_max = var.kernel_nf_conntrack_max
+    hardening		    = var.hardening
+    profile		    = var.profile
+    psact		    = var.psact
   })
   ssh_keys = var.ssh_keys
   tags     = [join("", ["user:", replace(split("@", data.digitalocean_account.do-account.email)[0], ".", "-")])]
@@ -164,6 +167,21 @@ resource "digitalocean_droplet" "rancher-tools" {
   tags     = [join("", ["user:", replace(split("@", data.digitalocean_account.do-account.email)[0], ".", "-")])]
 }
 
+locals {
+  cis_valid = (
+    var.hardening == false ||
+    (var.hardening == true && length(var.profile) > 0 && length(var.psact) > 0)
+  )
+}
+
+resource "null_resource" "validate_cis_profile" {
+  count = local.cis_valid ? 0 : 1
+
+  provisioner "local-exec" {
+    command = "echo '❌ Validation failed: If hardening=true, both profile and psact must be set.' && exit 1"
+  }
+}
+
 resource "digitalocean_droplet" "rancheragent-rke2-all" {
   depends_on = [time_sleep.wait_10_seconds_to_destroy_vpc]
   count      = var.count_rke2_agent_all_nodes
@@ -179,6 +197,7 @@ resource "digitalocean_droplet" "rancheragent-rke2-all" {
     docker_root          = var.docker_root
     rancher_version      = var.rancher_version
     server_address       = digitalocean_droplet.rancherserver[0].ipv4_address
+    hardening            = var.hardening
   })
   ssh_keys = var.ssh_keys
   tags     = [join("", ["user:", replace(split("@", data.digitalocean_account.do-account.email)[0], ".", "-")])]
@@ -199,6 +218,7 @@ resource "digitalocean_droplet" "rancheragent-rke2-master" {
     docker_root          = var.docker_root
     rancher_version      = var.rancher_version
     server_address       = digitalocean_droplet.rancherserver[0].ipv4_address
+    hardening            = var.hardening
   })
   ssh_keys = var.ssh_keys
   tags     = [join("", ["user:", replace(split("@", data.digitalocean_account.do-account.email)[0], ".", "-")])]
@@ -219,6 +239,7 @@ resource "digitalocean_droplet" "rancheragent-rke2-etcd" {
     docker_root          = var.docker_root
     rancher_version      = var.rancher_version
     server_address       = digitalocean_droplet.rancherserver[0].ipv4_address
+    hardening            = var.hardening
   })
   ssh_keys = var.ssh_keys
   tags     = [join("", ["user:", replace(split("@", data.digitalocean_account.do-account.email)[0], ".", "-")])]
@@ -239,6 +260,7 @@ resource "digitalocean_droplet" "rancheragent-rke2-controlplane" {
     docker_root          = var.docker_root
     rancher_version      = var.rancher_version
     server_address       = digitalocean_droplet.rancherserver[0].ipv4_address
+    hardening            = var.hardening
   })
   ssh_keys = var.ssh_keys
   tags     = [join("", ["user:", replace(split("@", data.digitalocean_account.do-account.email)[0], ".", "-")])]
@@ -259,6 +281,7 @@ resource "digitalocean_droplet" "rancheragent-rke2-worker" {
     docker_root          = var.docker_root
     rancher_version      = var.rancher_version
     server_address       = digitalocean_droplet.rancherserver[0].ipv4_address
+    hardening            = var.hardening
   })
   ssh_keys = var.ssh_keys
   tags     = [join("", ["user:", replace(split("@", data.digitalocean_account.do-account.email)[0], ".", "-")])]
