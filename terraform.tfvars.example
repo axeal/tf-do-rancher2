@@ -11,7 +11,7 @@ prefix = "myname"
 rancher_registry = ""
 
 # rancher/rancher image tag to use
-rancher_version = "v2.7.9"
+rancher_version = "v2.11.4"
 
 # Rancher server audit log level (0-3)
 audit_level = 0
