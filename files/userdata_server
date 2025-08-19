@@ -170,8 +170,11 @@ if [ $RANCHER_2_6_0_COMPARISON = $GREATER_THAN ] || [ $RANCHER_2_6_0_COMPARISON 
         RKE2_K8S_VERSION=${k8s_rke2_version}
     fi
 
-    #Create RKE2 cluster
-    CLUSTERRESPONSE=$(docker run --rm --net=host $curlimage -s 'https://127.0.0.1/v1/provisioning.cattle.io.clusters' -H 'content-type: application/json' -H "Authorization: Bearer $APITOKEN" --data-binary '{"type":"provisioning.cattle.io.cluster","metadata":{"namespace":"fleet-default","name":"${cluster_rke2_name}"},"spec":{"kubernetesVersion":"'$${RKE2_K8S_VERSION}'","rkeConfig":{"machineGlobalConfig":{"cni":"${rke2_cni}"},"upgradeStrategy":{"controlPlaneConcurrency":"10%","controlPlaneDrainOptions":{},"workerConcurrency":"10%","workerDrainOptions":{}},"localClusterAuthEndpoint":{"enabled":false,"caCerts":"","fqdn":""},"machinePools":[]},"defaultPodSecurityPolicyTemplateName":null}}' --insecure)
+    # Add cluster name and kubernetesVersion to cluster manifest
+    CLUSTERBODY=$(echo '${cluster}' | docker run --rm -i ghcr.io/jqlang/jq -rc '.metadata.name = "${cluster_rke2_name}" | .spec.kubernetesVersion = "'$${RKE2_K8S_VERSION}'"')
+
+    # Create RKE2 cluster
+    CLUSTERRESPONSE=$(docker run --rm --net=host $curlimage -s 'https://127.0.0.1/v1/provisioning.cattle.io.clusters' -H 'content-type: application/json' -H "Authorization: Bearer $APITOKEN" --data-binary $CLUSTERBODY --insecure)
     # Extract clusterid to use for generating the cluster registration token
     CLUSTERID=`docker run --rm --net=host $curlimage -s 'https://127.0.0.1/v3/clusters?name=${cluster_rke2_name}' -H 'content-type: application/json' -H "Authorization: Bearer $APITOKEN" --insecure | docker run --rm -i $jqimage -r .data[].id`
 

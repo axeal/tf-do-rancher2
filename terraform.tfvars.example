@@ -77,9 +77,6 @@ docker_root = ""
 # CNI for the RKE cluster
 rke_cni = "canal"
 
-# CNI for the RKE2 cluster
-rke2_cni ="calico"
-
 # Droplet sizes
 all_size = "s-4vcpu-8gb"
 

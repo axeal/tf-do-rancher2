@@ -25,6 +25,7 @@ resource "digitalocean_droplet" "rancherserver" {
   region     = var.region_server
   size       = var.size
   user_data = templatefile("files/userdata_server", {
+    cluster                 = jsonencode(yamldecode(templatefile("${path.module}/files/cluster.provisioning.cattle.io.yaml", {})))
     admin_password          = var.admin_password
     cluster_name            = var.cluster_name
     cluster_rke2_name       = var.cluster_rke2_name
@@ -36,7 +37,6 @@ resource "digitalocean_droplet" "rancherserver" {
     k8s_version             = var.k8s_version
     k8s_rke2_version        = var.k8s_rke2_version
     rke_cni                 = var.rke_cni
-    rke2_cni                = var.rke2_cni
     audit_level             = var.audit_level
     kernel_nf_conntrack_max = var.kernel_nf_conntrack_max
   })
