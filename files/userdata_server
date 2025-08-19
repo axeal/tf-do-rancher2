@@ -131,27 +131,27 @@ while true; do
     fi
 done
 
-# Create RKE cluster (only available in v2.11.x and lower)
+# Create RKE1 cluster (only available in v2.11.x and lower)
 if [ $RANCHER_2_12_0_COMPARISON = $LESS_THAN ]; then
-    # Check for latest available RKE k8s version if not specifically set
-    if [ -z "${k8s_version}" ]; then
+    # Check for latest available RKE1 k8s version if not specifically set
+    if [ -z "${k8s_rke1_version}" ]; then
         while true; do
             K8SVERSIONRESPONSE=$(docker run --rm --net=host $curlimage -s 'https://127.0.0.1/v3/settings/k8s-version' -H 'content-type: application/json' -H "Authorization: Bearer $APITOKEN" --insecure)
-            K8SVERSION=$(echo $K8SVERSIONRESPONSE | docker run --rm -i $jqimage -r .value)
-            echo "K8SVERSION: "$K8SVERSION""
+            RKE1_K8S_VERSION=$(echo $K8SVERSIONRESPONSE | docker run --rm -i $jqimage -r .value)
+            echo "RKE1_K8S_VERSION: "$RKE1_K8S_VERSION""
 
-            if [ "$K8SVERSION" != "" ]; then
+            if [ "$RKE1_K8S_VERSION" != "" ]; then
                 break
             else
                 sleep 5
             fi
         done
     else
-        K8SVERSION="${k8s_version}"
+        RKE1_K8S_VERSION="${k8s_rke1_version}"
     fi
 
     # Create RKE1 cluster
-    CLUSTERRESPONSE=$(docker run --rm --net=host $curlimage -s 'https://127.0.0.1/v3/cluster' -H 'content-type: application/json' -H "Authorization: Bearer $APITOKEN" --data-binary '{"dockerRootDir":"${docker_root}","enableNetworkPolicy":false,"type":"cluster","rancherKubernetesEngineConfig":{"kubernetesVersion":"${k8s_version}","addonJobTimeout":30,"ignoreDockerVersion":true,"sshAgentAuth":false,"type":"rancherKubernetesEngineConfig","authentication":{"type":"authnConfig","strategy":"x509"},"network":{"type":"networkConfig","plugin":"${rke_cni}"},"ingress":{"type":"ingressConfig","provider":"nginx"},"monitoring":{"type":"monitoringConfig","provider":"metrics-server"},"services":{"type":"rkeConfigServices","kubeApi":{"podSecurityPolicy":false,"type":"kubeAPIService"},"etcd":{"creation":"12h","extraArgs":{"heartbeat-interval":500,"election-timeout":5000},"retention":"72h","snapshot":false,"type":"etcdService","backupConfig":{"enabled":true,"intervalHours":12,"retention":6,"type":"backupConfig"}}}},"localClusterAuthEndpoint":{"enabled":true,"type":"localClusterAuthEndpoint"},"name":"${cluster_name}"}' --insecure)
+    CLUSTERRESPONSE=$(docker run --rm --net=host $curlimage -s 'https://127.0.0.1/v3/cluster' -H 'content-type: application/json' -H "Authorization: Bearer $APITOKEN" --data-binary '{"dockerRootDir":"${docker_root}","enableNetworkPolicy":false,"type":"cluster","rancherKubernetesEngineConfig":{"kubernetesVersion":"'$${RKE1_K8S_VERSION}'","addonJobTimeout":30,"ignoreDockerVersion":true,"sshAgentAuth":false,"type":"rancherKubernetesEngineConfig","authentication":{"type":"authnConfig","strategy":"x509"},"network":{"type":"networkConfig","plugin":"${rke1_cni}"},"ingress":{"type":"ingressConfig","provider":"nginx"},"monitoring":{"type":"monitoringConfig","provider":"metrics-server"},"services":{"type":"rkeConfigServices","kubeApi":{"podSecurityPolicy":false,"type":"kubeAPIService"},"etcd":{"creation":"12h","extraArgs":{"heartbeat-interval":500,"election-timeout":5000},"retention":"72h","snapshot":false,"type":"etcdService","backupConfig":{"enabled":true,"intervalHours":12,"retention":6,"type":"backupConfig"}}}},"localClusterAuthEndpoint":{"enabled":true,"type":"localClusterAuthEndpoint"},"name":"${cluster_rke1_name}"}' --insecure)
     # Extract clusterid to use for generating the cluster registration token
     CLUSTERID=`echo $CLUSTERRESPONSE | docker run --rm -i $jqimage -r .id`
 
@@ -159,24 +159,24 @@ if [ $RANCHER_2_12_0_COMPARISON = $LESS_THAN ]; then
     docker run --rm --net=host $curlimage -s 'https://127.0.0.1/v3/clusterregistrationtoken' -H 'content-type: application/json' -H "Authorization: Bearer $APITOKEN" --data-binary '{"type":"clusterRegistrationToken","clusterId":"'$CLUSTERID'"}' --insecure
 fi
 
-# Create RKE2 cluster (only available in v2.6.x and higher)
+# Create v2 cluster (only available in v2.6.x and higher)
 if [ $RANCHER_2_6_0_COMPARISON = $GREATER_THAN ] || [ $RANCHER_2_6_0_COMPARISON = $EQUAL_TO ]; then
     # Check for latest available RKE2 k8s version if not specifically set
-    if [ -z "${k8s_rke2_version}" ]; then
+    if [ -z "${k8s_version}" ]; then
         ALL_RKE2_K8S=$(docker run --rm --net=host $curlimage -s 'https://127.0.0.1/v1-rke2-release/releases' --insecure)
         LATEST_RKE2_K8S=`echo $ALL_RKE2_K8S | docker run --rm -i $jqimage -r '.data[] | select(.type=="release") | .id' | tail -1`
-        RKE2_K8S_VERSION=$LATEST_RKE2_K8S
+        K8S_VERSION=$LATEST_RKE2_K8S
     else
-        RKE2_K8S_VERSION=${k8s_rke2_version}
+        K8S_VERSION=${k8s_version}
     fi
 
     # Add cluster name and kubernetesVersion to cluster manifest
-    CLUSTERBODY=$(echo '${cluster}' | docker run --rm -i ghcr.io/jqlang/jq -rc '.metadata.name = "${cluster_rke2_name}" | .spec.kubernetesVersion = "'$${RKE2_K8S_VERSION}'"')
+    CLUSTERBODY=$(echo '${cluster}' | docker run --rm -i ghcr.io/jqlang/jq -rc '.metadata.name = "${cluster_name}" | .spec.kubernetesVersion = "'$${K8S_VERSION}'"')
 
-    # Create RKE2 cluster
+    # Create v2 cluster
     CLUSTERRESPONSE=$(docker run --rm --net=host $curlimage -s 'https://127.0.0.1/v1/provisioning.cattle.io.clusters' -H 'content-type: application/json' -H "Authorization: Bearer $APITOKEN" --data-binary $CLUSTERBODY --insecure)
     # Extract clusterid to use for generating the cluster registration token
-    CLUSTERID=`docker run --rm --net=host $curlimage -s 'https://127.0.0.1/v3/clusters?name=${cluster_rke2_name}' -H 'content-type: application/json' -H "Authorization: Bearer $APITOKEN" --insecure | docker run --rm -i $jqimage -r .data[].id`
+    CLUSTERID=`docker run --rm --net=host $curlimage -s 'https://127.0.0.1/v3/clusters?name=${cluster_name}' -H 'content-type: application/json' -H "Authorization: Bearer $APITOKEN" --insecure | docker run --rm -i $jqimage -r .data[].id`
 
     # Generate registrationtoken
     docker run --rm --net=host $curlimage -s 'https://127.0.0.1/v3/clusterregistrationtoken' -H 'content-type: application/json' -H "Authorization: Bearer $APITOKEN" --data-binary '{"type":"clusterRegistrationToken","clusterId":"'$CLUSTERID'"}' --insecure

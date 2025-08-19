@@ -38,36 +38,36 @@ Host ${prefix}-rancheragent-worker-${index}
   StrictHostKeyChecking no
 
 %{ endfor ~}
-%{ for index, ip in rancheragent-rke2-all ~}
-Host ${prefix}-rancheragent-rke2-all-${index}
+%{ for index, ip in rancheragent-rke1-all ~}
+Host ${prefix}-rancheragent-rke1-all-${index}
   HostName ${ip}
   User ${user-agent}
   StrictHostKeyChecking no
 
 %{ endfor ~}
-%{ for index, ip in rancheragent-rke2-master ~}
-Host ${prefix}-rancheragent-rke2-master-${index}
+%{ for index, ip in rancheragent-rke1-master ~}
+Host ${prefix}-rancheragent-rke1-master-${index}
   HostName ${ip}
   User ${user-agent}
   StrictHostKeyChecking no
 
 %{ endfor ~}
-%{ for index, ip in rancheragent-rke2-etcd ~}
-Host ${prefix}-rancheragent-rke2-etcd-${index}
+%{ for index, ip in rancheragent-rke1-etcd ~}
+Host ${prefix}-rancheragent-rke1-etcd-${index}
   HostName ${ip}
   User ${user-agent}
   StrictHostKeyChecking no
 
 %{ endfor ~}
-%{ for index, ip in rancheragent-rke2-controlplane ~}
-Host ${prefix}-rancheragent-rke2-controlplane-${index}
+%{ for index, ip in rancheragent-rke1-controlplane ~}
+Host ${prefix}-rancheragent-rke1-controlplane-${index}
   HostName ${ip}
   User ${user-agent}
   StrictHostKeyChecking no
 
 %{ endfor ~}
-%{ for index, ip in rancheragent-rke2-worker ~}
-Host ${prefix}-rancheragent-rke2-worker-${index}
+%{ for index, ip in rancheragent-rke1-worker ~}
+Host ${prefix}-rancheragent-rke1-worker-${index}
   HostName ${ip}
   User ${user-agent}
   StrictHostKeyChecking no
