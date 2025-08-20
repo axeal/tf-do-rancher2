@@ -175,7 +175,6 @@ resource "digitalocean_droplet" "rancheragent-all" {
   user_data = templatefile("files/userdata_agent", {
     admin_password       = var.admin_password
     cluster_name         = var.cluster_name
-    rancher_version      = var.rancher_version
     server_address       = digitalocean_droplet.rancherserver[0].ipv4_address
   })
   ssh_keys = var.ssh_keys
@@ -193,7 +192,6 @@ resource "digitalocean_droplet" "rancheragent-master" {
   user_data = templatefile("files/userdata_agent", {
     admin_password       = var.admin_password
     cluster_name         = var.cluster_name
-    rancher_version      = var.rancher_version
     server_address       = digitalocean_droplet.rancherserver[0].ipv4_address
   })
   ssh_keys = var.ssh_keys
@@ -211,7 +209,6 @@ resource "digitalocean_droplet" "rancheragent-etcd" {
   user_data = templatefile("files/userdata_agent", {
     admin_password       = var.admin_password
     cluster_name         = var.cluster_name
-    rancher_version      = var.rancher_version
     server_address       = digitalocean_droplet.rancherserver[0].ipv4_address
   })
   ssh_keys = var.ssh_keys
@@ -229,7 +226,6 @@ resource "digitalocean_droplet" "rancheragent-controlplane" {
   user_data = templatefile("files/userdata_agent", {
     admin_password       = var.admin_password
     cluster_name         = var.cluster_name
-    rancher_version      = var.rancher_version
     server_address       = digitalocean_droplet.rancherserver[0].ipv4_address
   })
   ssh_keys = var.ssh_keys
@@ -247,7 +243,6 @@ resource "digitalocean_droplet" "rancheragent-worker" {
   user_data = templatefile("files/userdata_agent", {
     admin_password       = var.admin_password
     cluster_name         = var.cluster_name
-    rancher_version      = var.rancher_version
     server_address       = digitalocean_droplet.rancherserver[0].ipv4_address
   })
   ssh_keys = var.ssh_keys
