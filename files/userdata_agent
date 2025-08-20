@@ -1,4 +1,18 @@
 #!/bin/bash -x
+
+# Add etcd user for RKE2 hardening
+useradd -r -c "etcd user" -s /sbin/nologin -M etcd -U
+
+# Add sysctl options for RKE2/K3s hardening
+cat << 'SYSCTL' > /etc/sysctl.d/90-kubelet.conf
+vm.panic_on_oom=0
+vm.overcommit_memory=1
+kernel.panic=10
+kernel.panic_on_oops=1
+SYSCTL
+
+sysctl -p /etc/sysctl.d/90-kubelet.conf
+
 export rancher_server_ip='${server_address}'
 
 apt -y install curl || true
