@@ -54,8 +54,10 @@ done
 ROLEFLAG=`hostname | awk -F'-' '{ print $(NF-1) }'`
 
 # Set env for kubectl on rke2 server nodes
-if [[ "$ROLEFLAG" == "all" || "$ROLEFLAG" == "master" || "$ROLEFLAG" == "controlplane" ]]; then
-  cat << 'EOF' > /etc/profile.d/rancher.sh
+version='${k8s_version}'
+if [[ "$version" != *k3s* ]]; then
+  if [[ "$ROLEFLAG" == "all" || "$ROLEFLAG" == "master" || "$ROLEFLAG" == "controlplane" ]]; then
+    cat << 'EOF' > /etc/profile.d/rancher.sh
 export KUBECONFIG=/etc/rancher/rke2/rke2.yaml
 export CRI_CONFIG_FILE=/var/lib/rancher/rke2/agent/etc/crictl.yaml
 export CONTAINERD_ADDRESS=/run/k3s/containerd/containerd.sock
@@ -64,6 +66,7 @@ source <(kubectl completion bash)
 alias k=kubectl
 complete -F __start_kubectl k
 EOF
+  fi
 fi
 
 # Set role flag for all role and master role nodes
