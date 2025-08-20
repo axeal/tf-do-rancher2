@@ -175,8 +175,6 @@ resource "digitalocean_droplet" "rancheragent-all" {
   user_data = templatefile("files/userdata_agent", {
     admin_password       = var.admin_password
     cluster_name         = var.cluster_name
-    docker_version_agent = var.docker_version_agent
-    docker_root          = var.docker_root
     rancher_version      = var.rancher_version
     server_address       = digitalocean_droplet.rancherserver[0].ipv4_address
   })
@@ -195,8 +193,6 @@ resource "digitalocean_droplet" "rancheragent-master" {
   user_data = templatefile("files/userdata_agent", {
     admin_password       = var.admin_password
     cluster_name         = var.cluster_name
-    docker_version_agent = var.docker_version_agent
-    docker_root          = var.docker_root
     rancher_version      = var.rancher_version
     server_address       = digitalocean_droplet.rancherserver[0].ipv4_address
   })
@@ -215,8 +211,6 @@ resource "digitalocean_droplet" "rancheragent-etcd" {
   user_data = templatefile("files/userdata_agent", {
     admin_password       = var.admin_password
     cluster_name         = var.cluster_name
-    docker_version_agent = var.docker_version_agent
-    docker_root          = var.docker_root
     rancher_version      = var.rancher_version
     server_address       = digitalocean_droplet.rancherserver[0].ipv4_address
   })
@@ -235,8 +229,6 @@ resource "digitalocean_droplet" "rancheragent-controlplane" {
   user_data = templatefile("files/userdata_agent", {
     admin_password       = var.admin_password
     cluster_name         = var.cluster_name
-    docker_version_agent = var.docker_version_agent
-    docker_root          = var.docker_root
     rancher_version      = var.rancher_version
     server_address       = digitalocean_droplet.rancherserver[0].ipv4_address
   })
@@ -255,8 +247,6 @@ resource "digitalocean_droplet" "rancheragent-worker" {
   user_data = templatefile("files/userdata_agent", {
     admin_password       = var.admin_password
     cluster_name         = var.cluster_name
-    docker_version_agent = var.docker_version_agent
-    docker_root          = var.docker_root
     rancher_version      = var.rancher_version
     server_address       = digitalocean_droplet.rancherserver[0].ipv4_address
   })
