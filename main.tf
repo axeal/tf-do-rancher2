@@ -277,7 +277,7 @@ resource "local_file" "ssh_config" {
 }
 
 output "rancher-url" {
-  value = ["https://${digitalocean_droplet.rancherserver[0].ipv4_address}"]
+  value = ["https://${digitalocean_droplet.rancherserver[0].ipv4_address}.nip.io"]
 }
 
 output "tools-private-ip" {

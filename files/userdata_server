@@ -59,13 +59,6 @@ else
     export ADMIN_PASSWORD="administrator"
 fi
 
-if [ $RANCHER_2_7_6_COMPARISON = $GREATER_THAN ]; then
-    # wait for capi-controller-manager (capi-webhook-service) to be ready
-    while ! docker exec rancher-server kubectl rollout status -w -n cattle-provisioning-capi-system deploy/capi-controller-manager; do
-        sleep 5
-    done
-fi
-
 if [ $RANCHER_2_5_0_COMPARISON = $GREATER_THAN ] || [ $RANCHER_2_5_0_COMPARISON = $EQUAL_TO ]; then
     # wait for rancher-webook to be ready
     while ! docker exec rancher-server kubectl rollout status -w -n cattle-system deploy/rancher-webhook; do
@@ -116,7 +109,7 @@ while true; do
 done
 
 # Configure server-url
-RANCHER_SERVER="https://$(docker run --rm --net=host $curlimage -s http://169.254.169.254/metadata/v1/interfaces/public/0/ipv4/address)"
+RANCHER_SERVER="https://$(docker run --rm --net=host $curlimage -s http://169.254.169.254/metadata/v1/interfaces/public/0/ipv4/address).nip.io"
 
 while true; do
     docker run --rm --net=host $curlimage -s "$RANCHER_SERVER/v3/settings/server-url" -H 'content-type: application/json' -H "Authorization: Bearer $APITOKEN" -X PUT --data-binary '{"name":"server-url","value":"'$RANCHER_SERVER'"}' --insecure
@@ -157,6 +150,13 @@ if [ $RANCHER_2_12_0_COMPARISON = $LESS_THAN ]; then
 
     # Generate registrationtoken
     docker run --rm --net=host $curlimage -s 'https://127.0.0.1/v3/clusterregistrationtoken' -H 'content-type: application/json' -H "Authorization: Bearer $APITOKEN" --data-binary '{"type":"clusterRegistrationToken","clusterId":"'$CLUSTERID'"}' --insecure
+fi
+
+if [ $RANCHER_2_7_6_COMPARISON = $GREATER_THAN ]; then
+    # wait for capi-controller-manager (capi-webhook-service) to be ready
+    while ! docker exec rancher-server kubectl rollout status -w -n cattle-provisioning-capi-system deploy/capi-controller-manager; do
+        sleep 5
+    done
 fi
 
 # Create v2 cluster (only available in v2.6.x and higher)
