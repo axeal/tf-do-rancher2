@@ -15,8 +15,7 @@ sysctl -p /etc/sysctl.d/90-kubelet.conf
 
 export rancher_server_ip='${server_address}'
 
-apt -y install curl || true
-snap install jq || true
+apt -y install curl jq || true
 
 while true; do
   curl -sLk https://$rancher_server_ip/ping && sleep 15 && break
