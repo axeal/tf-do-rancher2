@@ -7,21 +7,27 @@
 This Terraform setup will:
 
 - Start a droplet running `rancher/rancher` version specified in `rancher_version`
-- Create an RKE1 custom cluster called `cluster_name`
-- Start `count_agent_all_nodes` amount of droplets and add them to the RKE1 custom cluster with all roles
-- Create an RKE2 custom cluster called `cluster_rke2_name`
-- Start `count_rke2_agent_all_nodes` amount of droplets and add them to the RKE2 custom cluster with all roles
+- Create an RKE2/K3s custom cluster called `cluster_name`
+- Start `count_agent_all_nodes` amount of droplets and add them to the RKE2/K3s custom cluster with all roles
+- If Rancher < v2.12, create an RKE1 custom cluster called `cluster_rke1_name`
+- If Rancher < v2.12, start `count_rke1_agent_all_nodes` amount of droplets and add them to the RKE1 custom cluster with all roles
 - Create an ssh_config file in the terraform module directory for connecting to the droplets
 
 ### Optional adding nodes per role
-- Start `count_agent_master_nodes` amount of droplets and add them to the RKE1 custom cluster with etcd and controlplane roles
-- Start `count_agent_etcd_nodes` amount of droplets and add them to the RKE1 custom cluster with etcd role
-- Start `count_agent_controlplane_nodes` amount of droplets and add them to the RKE1 custom cluster with controlplane role
-- Start `count_agent_worker_nodes` amount of droplets and add them to the RKE1 custom cluster with worker role
-- Start `count_rke2_agent_master_nodes` amount of droplets and add them to the RKE2 custom cluster with etcd and controlplane roles
-- Start `count_rke2_agent_etcd_nodes` amount of droplets and add them to the RKE2 custom cluster with etcd role
-- Start `count_rke2_agent_controlplane_nodes` amount of droplets and add them to the RKE2 custom cluster with controlplane role
-- Start `count_rke2_agent_worker_nodes` amount of droplets and add them to the RKE2 custom cluster with worker role
+- Start `count_agent_master_nodes` amount of droplets and add them to the RKE2/K3s custom cluster with etcd and controlplane roles
+- Start `count_agent_etcd_nodes` amount of droplets and add them to the RKE2/K3s custom cluster with etcd role
+- Start `count_agent_controlplane_nodes` amount of droplets and add them to the RKE2/K3s custom cluster with controlplane role
+- Start `count_agent_worker_nodes` amount of droplets and add them to the RKE2/K3s custom cluster with worker role
+- Start `count_rke1_agent_master_nodes` amount of droplets and add them to the RKE1 custom cluster with etcd and controlplane roles
+- Start `count_rke1_agent_etcd_nodes` amount of droplets and add them to the RKE1 custom cluster with etcd role
+- Start `count_rke1_agent_controlplane_nodes` amount of droplets and add them to the RKE1 custom cluster with controlplane role
+- Start `count_rke1_agent_worker_nodes` amount of droplets and add them to the RKE1 custom cluster with worker role
+
+## Custom cluster configuration
+
+The Kubernetes version of the RKE2/K3s custom cluster (e.g. `v1.33.6+rke2r1` or `v1.33.6+k3s1`) can be set via the `k8s_version` variable. Other configuration for the cluster, can be set directly on the `cluster.provisioning.cattle.io` manifest for the custom cluster, by editing the [`cluster.provisioning.cattle.io.yaml`](https://github.com/axeal/tf-do-rancher2/blob/master/files/cluster.provisioning.cattle.io.yaml) file.
+
+The Kubernetes version of the RKE1 custom cluster (e.g. `v1.32.9-rancher1-1`) can be set via the `k8s_rke1_version` variable.
 
 ## Registry configuration
 
@@ -29,7 +35,7 @@ The rancher and rancher-agent images will by default be pulled from Docker Hub. 
 
 ## Other options
 
-All available options/variables are described in [terraform.tfvars.example](https://github.com/superseb/tf-do-rancher2/blob/master/terraform.tfvars.example).
+All available options/variables are described in [terraform.tfvars.example](https://github.com/axeal/tf-do-rancher2/blob/master/terraform.tfvars.example).
 
 ## Tools
 
