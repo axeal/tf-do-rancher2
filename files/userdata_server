@@ -153,12 +153,12 @@ if [ $RANCHER_2_12_0_COMPARISON = $LESS_THAN ]; then
     docker run --rm --net=host $curlimage -s 'https://127.0.0.1/v3/clusterregistrationtoken' -H 'content-type: application/json' -H "Authorization: Bearer $APITOKEN" --data-binary '{"type":"clusterRegistrationToken","clusterId":"'$CLUSTERID'"}' --insecure
 fi
 
-if [ $RANCHER_2_7_6_COMPARISON = $GREATER_THAN ] && [ $RANCHER_2_13_0_COMPARISON = $LESS_THAN]; then
+if [ $RANCHER_2_7_6_COMPARISON = $GREATER_THAN ] && [ $RANCHER_2_13_0_COMPARISON = $LESS_THAN ]; then
     # wait for capi-controller-manager (capi-webhook-service) to be ready
     while ! docker exec rancher-server kubectl rollout status -w -n cattle-provisioning-capi-system deploy/capi-controller-manager; do
         sleep 5
     done
-elif [ $RANCHER_2_13_0_COMPARISON = $GREATER_THAN] || [ $RANCHER_2_13_0_COMPARISON = $EQUAL_TO]; then
+elif [ $RANCHER_2_13_0_COMPARISON = $GREATER_THAN ] || [ $RANCHER_2_13_0_COMPARISON = $EQUAL_TO ]; then
     # wait for capi-controller-manager (capi-validating-webhook-configuration) to be ready
     while ! docker exec rancher-server kubectl rollout status -w -n cattle-capi-system deploy/capi-controller-manager; do
         sleep 5
