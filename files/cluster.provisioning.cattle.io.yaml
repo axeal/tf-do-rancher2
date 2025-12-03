@@ -1,0 +1,14 @@
+apiVersion: provisioning.cattle.io/v1
+kind: Cluster
+metadata:
+  namespace: fleet-default
+spec:
+  rkeConfig:
+    machineGlobalConfig: {}
+    upgradeStrategy:
+      controlPlaneConcurrency: 10%
+      controlPlaneDrainOptions: {}
+      workerConcurrency: 10%
+      workerDrainOptions: {}
+    localClusterAuthEndpoint:
+      enabled: true

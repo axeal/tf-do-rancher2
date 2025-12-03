@@ -7,7 +7,7 @@ variable "prefix" {
 }
 
 variable "rancher_version" {
-  default = "v2.7.9"
+  default = "v2.11.4"
 }
 
 variable "audit_level" {
@@ -46,23 +46,23 @@ variable "count_tools_nodes" {
   default = "0"
 }
 
-variable "count_rke2_agent_all_nodes" {
+variable "count_rke1_agent_all_nodes" {
   default = "0"
 }
 
-variable "count_rke2_agent_master_nodes" {
+variable "count_rke1_agent_master_nodes" {
   default = "0"
 }
 
-variable "count_rke2_agent_etcd_nodes" {
+variable "count_rke1_agent_etcd_nodes" {
   default = "0"
 }
 
-variable "count_rke2_agent_controlplane_nodes" {
+variable "count_rke1_agent_controlplane_nodes" {
   default = "0"
 }
 
-variable "count_rke2_agent_worker_nodes" {
+variable "count_rke1_agent_worker_nodes" {
   default = "0"
 }
 
@@ -70,12 +70,12 @@ variable "admin_password" {
   default = "admin"
 }
 
-variable "cluster_name" {
-  default = "custom"
+variable "cluster_rke1_name" {
+  default = "rke1custom"
 }
 
-variable "cluster_rke2_name" {
-  default = "rke2custom"
+variable "cluster_name" {
+  default = "custom"
 }
 
 variable "region_server" {
@@ -126,20 +126,16 @@ variable "docker_root" {
   default = ""
 }
 
+variable "k8s_rke1_version" {
+  default = ""
+}
+
 variable "k8s_version" {
   default = ""
 }
 
-variable "k8s_rke2_version" {
-  default = ""
-}
-
-variable "rke_cni" {
+variable "rke1_cni" {
   default = "canal"
-}
-
-variable "rke2_cni" {
-  default = "calico"
 }
 
 variable "image_server" {

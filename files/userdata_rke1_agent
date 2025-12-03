@@ -1,0 +1,107 @@
+#!/bin/bash -x
+export curlimage=appropriate/curl
+export jqimage=ghcr.io/jqlang/jq
+export rancher_server_ip='${server_address}'
+
+if [ `command -v curl` ]; then
+  curl -sL https://releases.rancher.com/install-docker/${docker_version_agent}.sh | sh
+elif [ `command -v wget` ]; then
+  wget -qO- https://releases.rancher.com/install-docker/${docker_version_agent}.sh | sh
+fi
+
+if [ -n "${docker_root}" ]; then
+  echo '{"graph": "${docker_root}"}' > /etc/docker/daemon.json
+  if [ -x "$(command -v service)" ]; then
+    service docker restart
+  elif [ -x "$(command -v systemctl)" ]; then
+    systemctl restart docker
+  elif [ -x "$(command -v system-docker)" ]; then
+    system-docker restart docker
+  fi
+fi
+
+agentimage="rancher/rancher-agent:${rancher_version}"
+if [ -n "${rancher_registry}" ]; then
+  if docker pull "${rancher_registry}/rancher/rancher-agent:${rancher_version}"; then
+    agentimage="${rancher_registry}/rancher/rancher-agent:${rancher_version}"
+  fi
+fi
+
+for image in $curlimage $jqimage $agentimage; do
+  until docker inspect $image > /dev/null 2>&1; do
+    docker pull $image
+    sleep 2
+  done
+done
+
+while true; do
+  docker run --rm $curlimage -sLk https://$rancher_server_ip/ping && sleep 15 && break
+  sleep 5
+done
+
+# Login
+while true; do
+
+    LOGINRESPONSE=$(docker run \
+        --rm \
+        $curlimage \
+        -s "https://$rancher_server_ip/v3-public/localProviders/local?action=login" -H 'content-type: application/json' --data-binary '{"username":"admin","password":"${admin_password}"}' --insecure)
+    if [ "x$LOGINRESPONSE" = "x" ]; then
+        continue
+    fi
+
+    LOGINTOKEN=$(echo $LOGINRESPONSE | docker run --rm -i $jqimage -r .token)
+
+    if [ "$LOGINTOKEN" != "null" ]; then
+        break
+    else
+        sleep 5
+    fi
+done
+
+# Test if cluster is created
+while true; do
+  CLUSTERID=$(docker run \
+    --rm \
+    $curlimage \
+      -sLk \
+      -H "Authorization: Bearer $LOGINTOKEN" \
+      "https://$rancher_server_ip/v3/clusters?name=${cluster_name}" | docker run --rm -i $jqimage -r '.data[].id')
+
+  if [ -n "$CLUSTERID" ]; then
+    break
+  else
+    sleep 5
+  fi
+done
+
+# Get role flags from hostname
+ROLEFLAG=`hostname | awk -F'-' '{ print $(NF-1) }'`
+if [[ "$ROLEFLAG" == "all" ]]; then
+  ROLEFLAG="all-roles"
+elif [[ "$ROLEFLAG" == "master" ]]; then
+  ROLEFLAG="etcd --controlplane"
+fi
+
+# Get token
+# Test if cluster is created
+while true; do
+  AGENTCMD=$(docker run \
+    --rm \
+    $curlimage \
+      -sLk \
+      -H "Authorization: Bearer $LOGINTOKEN" \
+      "https://$rancher_server_ip/v3/clusterregistrationtoken?clusterId=$CLUSTERID" | docker run --rm -i $jqimage -r '.data[].nodeCommand' | head -1)
+
+  if [ -n "$AGENTCMD" ]; then
+    break
+  else
+    sleep 5
+  fi
+done
+
+# Combine command and flags
+COMPLETECMD="$AGENTCMD --$ROLEFLAG"
+
+# Run command
+$COMPLETECMD

@@ -1,58 +1,34 @@
 #!/bin/bash -x
-export curlimage=appropriate/curl
-export jqimage=ghcr.io/jqlang/jq
+
+# Add etcd user for RKE2 hardening
+useradd -r -c "etcd user" -s /sbin/nologin -M etcd -U
+
+# Add sysctl options for RKE2/K3s hardening
+cat << 'SYSCTL' > /etc/sysctl.d/90-kubelet.conf
+vm.panic_on_oom=0
+vm.overcommit_memory=1
+kernel.panic=10
+kernel.panic_on_oops=1
+SYSCTL
+
+sysctl -p /etc/sysctl.d/90-kubelet.conf
+
 export rancher_server_ip='${server_address}'
 
-if [ `command -v curl` ]; then
-  curl -sL https://releases.rancher.com/install-docker/${docker_version_agent}.sh | sh
-elif [ `command -v wget` ]; then
-  wget -qO- https://releases.rancher.com/install-docker/${docker_version_agent}.sh | sh
-fi
-
-if [ -n "${docker_root}" ]; then
-  echo '{"graph": "${docker_root}"}' > /etc/docker/daemon.json
-  if [ -x "$(command -v service)" ]; then
-    service docker restart
-  elif [ -x "$(command -v systemctl)" ]; then
-    systemctl restart docker
-  elif [ -x "$(command -v system-docker)" ]; then
-    system-docker restart docker
-  fi
-fi
-
-agentimage="rancher/rancher-agent:${rancher_version}"
-if [ -n "${rancher_registry}" ]; then
-  if docker pull "${rancher_registry}/rancher/rancher-agent:${rancher_version}"; then
-    agentimage="${rancher_registry}/rancher/rancher-agent:${rancher_version}"
-  fi
-fi
-
-for image in $curlimage $jqimage $agentimage; do
-  until docker inspect $image > /dev/null 2>&1; do
-    docker pull $image
-    sleep 2
-  done
-done
+apt -y install curl jq || true
 
 while true; do
-  docker run --rm $curlimage -sLk https://$rancher_server_ip/ping && sleep 15 && break
+  curl -sLk https://$rancher_server_ip/ping && sleep 15 && break
   sleep 5
 done
 
 # Login
 while true; do
 
-    LOGINRESPONSE=$(docker run \
-        --rm \
-        $curlimage \
-        -s "https://$rancher_server_ip/v3-public/localProviders/local?action=login" -H 'content-type: application/json' --data-binary '{"username":"admin","password":"${admin_password}"}' --insecure)
-    if [ "x$LOGINRESPONSE" = "x" ]; then
-        continue
-    fi
+    LOGINRESPONSE=$(curl -s "https://$rancher_server_ip/v3-public/localProviders/local?action=login" -H 'content-type: application/json' --data-binary '{"username":"admin","password":"${admin_password}"}' --insecure)
+    LOGINTOKEN=$(echo $LOGINRESPONSE | jq -r .token)
 
-    LOGINTOKEN=$(echo $LOGINRESPONSE | docker run --rm -i $jqimage -r .token)
-
-    if [ "$LOGINTOKEN" != "null" ]; then
+    if [ "$LOGINTOKEN" != "" ] && [ "$LOGINTOKEN" != "null" ]; then
         break
     else
         sleep 5
@@ -61,12 +37,10 @@ done
 
 # Test if cluster is created
 while true; do
-  CLUSTERID=$(docker run \
-    --rm \
-    $curlimage \
+  CLUSTERID=$(curl \
       -sLk \
       -H "Authorization: Bearer $LOGINTOKEN" \
-      "https://$rancher_server_ip/v3/clusters?name=${cluster_name}" | docker run --rm -i $jqimage -r '.data[].id')
+      "https://$rancher_server_ip/v3/clusters?name=${cluster_name}" | jq -r '.data[].id')
 
   if [ -n "$CLUSTERID" ]; then
     break
@@ -77,8 +51,26 @@ done
 
 # Get role flags from hostname
 ROLEFLAG=`hostname | awk -F'-' '{ print $(NF-1) }'`
+
+# Set env for kubectl on rke2 server nodes
+version='${k8s_version}'
+if [[ "$version" != *k3s* ]]; then
+  if [[ "$ROLEFLAG" == "all" || "$ROLEFLAG" == "master" || "$ROLEFLAG" == "controlplane" ]]; then
+    cat << 'EOF' > /etc/profile.d/rancher.sh
+export KUBECONFIG=/etc/rancher/rke2/rke2.yaml
+export CRI_CONFIG_FILE=/var/lib/rancher/rke2/agent/etc/crictl.yaml
+export CONTAINERD_ADDRESS=/run/k3s/containerd/containerd.sock
+PATH="$PATH:/var/lib/rancher/rke2/bin"
+source <(kubectl completion bash)
+alias k=kubectl
+complete -F __start_kubectl k
+EOF
+  fi
+fi
+
+# Set role flag for all role and master role nodes
 if [[ "$ROLEFLAG" == "all" ]]; then
-  ROLEFLAG="all-roles"
+  ROLEFLAG="etcd --controlplane --worker"
 elif [[ "$ROLEFLAG" == "master" ]]; then
   ROLEFLAG="etcd --controlplane"
 fi
@@ -86,12 +78,10 @@ fi
 # Get token
 # Test if cluster is created
 while true; do
-  AGENTCMD=$(docker run \
-    --rm \
-    $curlimage \
+  AGENTCMD=$(curl \
       -sLk \
       -H "Authorization: Bearer $LOGINTOKEN" \
-      "https://$rancher_server_ip/v3/clusterregistrationtoken?clusterId=$CLUSTERID" | docker run --rm -i $jqimage -r '.data[].nodeCommand' | head -1)
+      "https://$rancher_server_ip/v3/clusterregistrationtoken?clusterId=$CLUSTERID" | jq -r '.data[].insecureNodeCommand' | head -1)
 
   if [ -n "$AGENTCMD" ]; then
     break
@@ -104,4 +94,4 @@ done
 COMPLETECMD="$AGENTCMD --$ROLEFLAG"
 
 # Run command
-$COMPLETECMD
+sh -c "$${COMPLETECMD}"

@@ -23,6 +23,7 @@ grep -q "net.netfilter.nf_conntrack_max" /etc/sysctl.conf || \
 sysctl -p /etc/sysctl.conf
 ###
 
+# Attempt to pull Rancher image from registry if defined, fall back to Docker Hub if pull if unsuccessful
 rancherimage="rancher/rancher:${rancher_version}"
 if [ -n "${rancher_registry}" ]; then
   if docker pull "${rancher_registry}/rancher/rancher:${rancher_version}"; then
@@ -37,7 +38,8 @@ for image in $curlimage $jqimage $rancherimage; do
   done
 done
 
-docker run -d -e CATTLE_BOOTSTRAP_PASSWORD=administrator -e AUDIT_LEVEL=${audit_level} --privileged --restart=unless-stopped -p 80:80 -p 443:443 -v /root/rancher:/var/lib/rancher --name rancher-server $rancherimage ${rancher_args}
+# Start Rancher container
+docker run -d -e CATTLE_BOOTSTRAP_PASSWORD=bootstrapPassword -e AUDIT_LEVEL=${audit_level} --privileged --restart=unless-stopped -p 80:80 -p 443:443 -v /root/rancher:/var/lib/rancher --name rancher-server $rancherimage ${rancher_args}
 
 while true; do
   docker run --rm --net=host $curlimage -sLk https://127.0.0.1/ping && sleep 10 && break
@@ -47,6 +49,7 @@ RANCHER_2_6_0_COMPARISON=$(semver2.sh ${rancher_version} v2.6)
 RANCHER_2_7_6_COMPARISON=$(semver2.sh ${rancher_version} v2.7.6)
 RANCHER_2_5_0_COMPARISON=$(semver2.sh ${rancher_version} v2.5)
 RANCHER_2_12_0_COMPARISON=$(semver2.sh ${rancher_version} v2.12)
+RANCHER_2_13_0_COMPARISON=$(semver2.sh ${rancher_version} v2.13)
 LESS_THAN=-1
 GREATER_THAN=1
 EQUAL_TO=0
@@ -54,14 +57,7 @@ EQUAL_TO=0
 if [ $RANCHER_2_6_0_COMPARISON = $LESS_THAN ]; then
     export ADMIN_PASSWORD="admin"
 else
-    export ADMIN_PASSWORD="administrator"
-fi
-
-if [ $RANCHER_2_7_6_COMPARISON = $GREATER_THAN ]; then
-    # wait for capi-controller-manager (capi-webhook-service) to be ready
-    while ! docker exec rancher-server kubectl rollout status -w -n cattle-provisioning-capi-system deploy/capi-controller-manager; do
-        sleep 5
-    done
+    export ADMIN_PASSWORD="bootstrapPassword"
 fi
 
 if [ $RANCHER_2_5_0_COMPARISON = $GREATER_THAN ] || [ $RANCHER_2_5_0_COMPARISON = $EQUAL_TO ]; then
@@ -114,7 +110,7 @@ while true; do
 done
 
 # Configure server-url
-RANCHER_SERVER="https://$(docker run --rm --net=host $curlimage -s http://169.254.169.254/metadata/v1/interfaces/public/0/ipv4/address)"
+RANCHER_SERVER="https://$(docker run --rm --net=host $curlimage -s http://169.254.169.254/metadata/v1/interfaces/public/0/ipv4/address).nip.io"
 
 while true; do
     docker run --rm --net=host $curlimage -s "$RANCHER_SERVER/v3/settings/server-url" -H 'content-type: application/json' -H "Authorization: Bearer $APITOKEN" -X PUT --data-binary '{"name":"server-url","value":"'$RANCHER_SERVER'"}' --insecure
@@ -129,50 +125,66 @@ while true; do
     fi
 done
 
-# Create RKE cluster (only available in v2.11.x and lower)
+# Create RKE1 cluster (only available in v2.11.x and lower)
 if [ $RANCHER_2_12_0_COMPARISON = $LESS_THAN ]; then
-    # Check for available k8s versions if not specifically set
-    if [ -z "${k8s_version}" ]; then
+    # Check for latest available RKE1 k8s version if not specifically set
+    if [ -z "${k8s_rke1_version}" ]; then
         while true; do
             K8SVERSIONRESPONSE=$(docker run --rm --net=host $curlimage -s 'https://127.0.0.1/v3/settings/k8s-version' -H 'content-type: application/json' -H "Authorization: Bearer $APITOKEN" --insecure)
-            K8SVERSION=$(echo $K8SVERSIONRESPONSE | docker run --rm -i $jqimage -r .value)
-            echo "K8SVERSION: "$K8SVERSION""
+            RKE1_K8S_VERSION=$(echo $K8SVERSIONRESPONSE | docker run --rm -i $jqimage -r .value)
+            echo "RKE1_K8S_VERSION: "$RKE1_K8S_VERSION""
 
-            if [ "$K8SVERSION" != "" ]; then
+            if [ "$RKE1_K8S_VERSION" != "" ]; then
                 break
             else
                 sleep 5
             fi
         done
     else
-        K8SVERSION="${k8s_version}"
+        RKE1_K8S_VERSION="${k8s_rke1_version}"
     fi
 
     # Create RKE1 cluster
-    CLUSTERRESPONSE=$(docker run --rm --net=host $curlimage -s 'https://127.0.0.1/v3/cluster' -H 'content-type: application/json' -H "Authorization: Bearer $APITOKEN" --data-binary '{"dockerRootDir":"${docker_root}","enableNetworkPolicy":false,"type":"cluster","rancherKubernetesEngineConfig":{"kubernetesVersion":"${k8s_version}","addonJobTimeout":30,"ignoreDockerVersion":true,"sshAgentAuth":false,"type":"rancherKubernetesEngineConfig","authentication":{"type":"authnConfig","strategy":"x509"},"network":{"type":"networkConfig","plugin":"${rke_cni}"},"ingress":{"type":"ingressConfig","provider":"nginx"},"monitoring":{"type":"monitoringConfig","provider":"metrics-server"},"services":{"type":"rkeConfigServices","kubeApi":{"podSecurityPolicy":false,"type":"kubeAPIService"},"etcd":{"creation":"12h","extraArgs":{"heartbeat-interval":500,"election-timeout":5000},"retention":"72h","snapshot":false,"type":"etcdService","backupConfig":{"enabled":true,"intervalHours":12,"retention":6,"type":"backupConfig"}}}},"localClusterAuthEndpoint":{"enabled":true,"type":"localClusterAuthEndpoint"},"name":"${cluster_name}"}' --insecure)
-    # Extract clusterid to use for generating the docker run command
+    CLUSTERRESPONSE=$(docker run --rm --net=host $curlimage -s 'https://127.0.0.1/v3/cluster' -H 'content-type: application/json' -H "Authorization: Bearer $APITOKEN" --data-binary '{"dockerRootDir":"${docker_root}","enableNetworkPolicy":false,"type":"cluster","rancherKubernetesEngineConfig":{"kubernetesVersion":"'$${RKE1_K8S_VERSION}'","addonJobTimeout":30,"ignoreDockerVersion":true,"sshAgentAuth":false,"type":"rancherKubernetesEngineConfig","authentication":{"type":"authnConfig","strategy":"x509"},"network":{"type":"networkConfig","plugin":"${rke1_cni}"},"ingress":{"type":"ingressConfig","provider":"nginx"},"monitoring":{"type":"monitoringConfig","provider":"metrics-server"},"services":{"type":"rkeConfigServices","kubeApi":{"podSecurityPolicy":false,"type":"kubeAPIService"},"etcd":{"creation":"12h","extraArgs":{"heartbeat-interval":500,"election-timeout":5000},"retention":"72h","snapshot":false,"type":"etcdService","backupConfig":{"enabled":true,"intervalHours":12,"retention":6,"type":"backupConfig"}}}},"localClusterAuthEndpoint":{"enabled":true,"type":"localClusterAuthEndpoint"},"name":"${cluster_rke1_name}"}' --insecure)
+    # Extract clusterid to use for generating the cluster registration token
     CLUSTERID=`echo $CLUSTERRESPONSE | docker run --rm -i $jqimage -r .id`
 
     # Generate registrationtoken
     docker run --rm --net=host $curlimage -s 'https://127.0.0.1/v3/clusterregistrationtoken' -H 'content-type: application/json' -H "Authorization: Bearer $APITOKEN" --data-binary '{"type":"clusterRegistrationToken","clusterId":"'$CLUSTERID'"}' --insecure
 fi
 
-# Create RKE2 cluster (only available in v2.6.x and higher)
+if [ $RANCHER_2_7_6_COMPARISON = $GREATER_THAN ] && [ $RANCHER_2_13_0_COMPARISON = $LESS_THAN]; then
+    # wait for capi-controller-manager (capi-webhook-service) to be ready
+    while ! docker exec rancher-server kubectl rollout status -w -n cattle-provisioning-capi-system deploy/capi-controller-manager; do
+        sleep 5
+    done
+elif [ $RANCHER_2_13_0_COMPARISON = $GREATER_THAN] || [ $RANCHER_2_13_0_COMPARISON = $EQUAL_TO]; then
+    # wait for capi-controller-manager (capi-validating-webhook-configuration) to be ready
+    while ! docker exec rancher-server kubectl rollout status -w -n cattle-capi-system deploy/capi-controller-manager; do
+        sleep 5
+    done
+fi
+
+# Create v2 cluster (only available in v2.6.x and higher)
 if [ $RANCHER_2_6_0_COMPARISON = $GREATER_THAN ] || [ $RANCHER_2_6_0_COMPARISON = $EQUAL_TO ]; then
-    RKE2_K8S_VERSION=${k8s_rke2_version}
-    if [[ "x$${RKE2_K8S_VERSION}" == "x" ]]; then
-    # Look up latest available
-    ALL_RKE2_K8S=$(docker run --rm --net=host $curlimage -s 'https://127.0.0.1/v1-rke2-release/releases' --insecure)
-    LATEST_RKE2_K8S=`echo $ALL_RKE2_K8S | docker run --rm -i $jqimage -r '.data[] | select(.type=="release") | .id' | tail -1`
-    RKE2_K8S_VERSION=$LATEST_RKE2_K8S
+    # Check for latest available RKE2 k8s version if not specifically set
+    if [ -z "${k8s_version}" ]; then
+        ALL_RKE2_K8S=$(docker run --rm --net=host $curlimage -s 'https://127.0.0.1/v1-rke2-release/releases' --insecure)
+        LATEST_RKE2_K8S=`echo $ALL_RKE2_K8S | docker run --rm -i $jqimage -r '.data[] | select(.type=="release") | .id' | tail -1`
+        K8S_VERSION=$LATEST_RKE2_K8S
+    else
+        K8S_VERSION=${k8s_version}
     fi
 
-    #CLUSTERRESPONSE=$(docker run --rm --net=host $curlimage -s 'https://127.0.0.1/v1/provisioning.cattle.io.clusters' -H 'content-type: application/json' -H "Authorization: Bearer $APITOKEN" --data-binary '{"type":"provisioning.cattle.io.cluster","metadata":{"namespace":"fleet-default","name":"${cluster_rke2_name}"},"spec":{"kubernetesVersion":"'$${RKE2_K8S_VERSION}'","rkeConfig":{"upgradeStrategy":{"controlPlaneConcurrency":"10%","controlPlaneDrainOptions":{},"workerConcurrency":"10%","workerDrainOptions":{}},"controlPlaneConfig":{"audit-policy-file":null,"cluster-cidr":null,"cluster-dns":null,"cluster-domain":null,"cni":"calico","disable":null,"etcd-disable-snapshots":null,"etcd-expose-metrics":null,"etcd-snapshot-dir":null,"etcd-snapshot-name":null,"etcd-snapshot-retention":null,"etcd-snapshot-schedule-cron":null,"kube-apiserver-arg":null,"kube-controller-manager-arg":null,"kube-scheduler-arg":null,"profile":null,"secrets-encryption":null,"service-cidr":null,"service-node-port-range":null,"tls-san":null},"workerConfig":[{"audit-policy-file":null,"cloud-provider-config":null,"cloud-provider-name":"none","kubelet-arg":null,"profile":null,"protect-kernel-defaults":null,"selinux":null,"system-default-registry":null}],"localClusterAuthEndpoint":{"enabled":false,"caCerts":"","fqdn":""},"nodePools":[]},"defaultPodSecurityPolicyTemplateName":null}}' --insecure)
-    CLUSTERRESPONSE=$(docker run --rm --net=host $curlimage -s 'https://127.0.0.1/v1/provisioning.cattle.io.clusters' -H 'content-type: application/json' -H "Authorization: Bearer $APITOKEN" --data-binary '{"type":"provisioning.cattle.io.cluster","metadata":{"namespace":"fleet-default","name":"${cluster_rke2_name}"},"spec":{"kubernetesVersion":"'$${RKE2_K8S_VERSION}'","rkeConfig":{"machineGlobalConfig":{"cni":"${rke2_cni}"},"upgradeStrategy":{"controlPlaneConcurrency":"10%","controlPlaneDrainOptions":{},"workerConcurrency":"10%","workerDrainOptions":{}},"localClusterAuthEndpoint":{"enabled":false,"caCerts":"","fqdn":""},"machinePools":[]},"defaultPodSecurityPolicyTemplateName":null}}' --insecure)
-    # Get  clusterid to use for generating the docker run command
-    CLUSTERID=`docker run --rm --net=host $curlimage -s 'https://127.0.0.1/v3/clusters?name=${cluster_rke2_name}' -H 'content-type: application/json' -H "Authorization: Bearer $APITOKEN" --insecure | docker run --rm -i $jqimage -r .data[].id`
+    # Add cluster name and kubernetesVersion to cluster manifest
+    CLUSTERBODY=$(echo '${cluster}' | docker run --rm -i ghcr.io/jqlang/jq -rc '.metadata.name = "${cluster_name}" | .spec.kubernetesVersion = "'$${K8S_VERSION}'"')
 
-    # Generate RKE2 registrationtoken
+    # Create v2 cluster
+    CLUSTERRESPONSE=$(docker run --rm --net=host $curlimage -s 'https://127.0.0.1/v1/provisioning.cattle.io.clusters' -H 'content-type: application/json' -H "Authorization: Bearer $APITOKEN" --data-binary $CLUSTERBODY --insecure)
+    # Extract clusterid to use for generating the cluster registration token
+    CLUSTERID=`docker run --rm --net=host $curlimage -s 'https://127.0.0.1/v3/clusters?name=${cluster_name}' -H 'content-type: application/json' -H "Authorization: Bearer $APITOKEN" --insecure | docker run --rm -i $jqimage -r .data[].id`
+
+    # Generate registrationtoken
     docker run --rm --net=host $curlimage -s 'https://127.0.0.1/v3/clusterregistrationtoken' -H 'content-type: application/json' -H "Authorization: Bearer $APITOKEN" --data-binary '{"type":"clusterRegistrationToken","clusterId":"'$CLUSTERID'"}' --insecure
 fi
 
@@ -189,5 +201,5 @@ CACERTS=$(echo $API_CACERTS | docker run --rm -i $jqimage -r .value)
 echo "$CACERTS" > /root/cacerts
 
 # Accept anything for project
-echo 1 | rancher login --cacert /root/cacerts --token $APITOKEN https://127.0.0.1/v3
+echo 1 | HOME=/root rancher login --cacert /root/cacerts --token $APITOKEN https://127.0.0.1/v3
 ln -s /.rancher ~/.rancher

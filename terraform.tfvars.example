@@ -11,7 +11,7 @@ prefix = "myname"
 rancher_registry = ""
 
 # rancher/rancher image tag to use
-rancher_version = "v2.7.9"
+rancher_version = "v2.11.4"
 
 # Rancher server audit log level (0-3)
 audit_level = 0
@@ -26,59 +26,56 @@ region_server = "lon1"
 # Region where agent(s) should be created
 region_agent = "lon1"
 
-# Count of RKE1 custom cluster nodes with all roles
+# Count of custom cluster nodes with all roles
 count_agent_all_nodes = "3"
 
-# Count of RKE1 custom cluster nodes with etcd and controlplane roles
+# Count of custom cluster nodes with etcd and controlplane roles
 count_agent_master_nodes = "0"
 
-# Count of RKE1 custom cluster nodes with role etcd
+# Count of custom cluster nodes with role etcd
 count_agent_etcd_nodes = "0"
 
-# Count of RKE1 custom cluster nodes with role controlplane
+# Count of custom cluster nodes with role controlplane
 count_agent_controlplane_nodes = "0"
 
-# Count of RKE1 custom cluster nodes with role worker
+# Count of custom cluster nodes with role worker
 count_agent_worker_nodes = "0"
 
 # Count of tools nodes
 count_tools_nodes = "0"
 
-# Count of RKE2 custom cluster nodes with all roles
-count_rke2_agent_all_nodes = "0"
+# Count of RKE1 custom cluster nodes with all roles
+count_rke1_agent_all_nodes = "0"
 
-# Count of RKE2 custom cluster nodes with etcd and controlplane roles
-count_rke2_agent_master_nodes = "0"
+# Count of RKE1 custom cluster nodes with etcd and controlplane roles
+count_rke1_agent_master_nodes = "0"
 
-# Count of RKE2 custom cluster nodes with role etcd
-count_rke2_agent_etcd_nodes = "0"
+# Count of RKE1 custom cluster nodes with role etcd
+count_rke1_agent_etcd_nodes = "0"
 
-# Count of RKE2 custom cluster nodes with role controlplane
-count_rke2_agent_controlplane_nodes = "0"
+# Count of RKE1 custom cluster nodes with role controlplane
+count_rke1_agent_controlplane_nodes = "0"
 
-# Count of RKE2 custom cluster nodes with role worker
-count_rke2_agent_worker_nodes = "0"
+# Count of RKE1 custom cluster nodes with role worker
+count_rke1_agent_worker_nodes = "0"
 
 # Docker version of host running `rancher/rancher`
 docker_version_server = "24.0"
 
-# Docker version of host being added to a cluster (running `rancher/rancher-agent`)
+# Docker version of RKE1 nodes
 docker_version_agent = "24.0"
 
-# Docker root on agent nodes
+# Docker root on RKE1 nodes
 docker_root = ""
 
-# K8s version of RKE custom cluster
+# K8s version of custom cluster
 #k8s_version = ""
 
-# K8s version of RKE2 custom cluster
-#k8s_rke2_version = ""
+# K8s version of RKE1 custom cluster
+#k8s_rke1_version = ""
 
 # CNI for the RKE cluster
-rke_cni = "canal"
-
-# CNI for the RKE2 cluster
-rke2_cni ="calico"
+rke1_cni = "canal"
 
 # Droplet sizes
 all_size = "s-4vcpu-8gb"
