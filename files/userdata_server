@@ -177,7 +177,7 @@ if [ $RANCHER_2_6_0_COMPARISON = $GREATER_THAN ] || [ $RANCHER_2_6_0_COMPARISON 
     fi
 
     # Add cluster name and kubernetesVersion to cluster manifest
-    CLUSTERBODY=$(echo '${cluster}' | docker run --rm -i ghcr.io/jqlang/jq -rc '.metadata.name = "${cluster_name}" | .spec.kubernetesVersion = "'$${K8S_VERSION}'"')
+    CLUSTERBODY=$(echo '${cluster}' | docker run --rm -i $jqimage -rc '.metadata.name = "${cluster_name}" | .spec.kubernetesVersion = "'$${K8S_VERSION}'"')
 
     # Create v2 cluster
     CLUSTERRESPONSE=$(docker run --rm --net=host $curlimage -s 'https://127.0.0.1/v1/provisioning.cattle.io.clusters' -H 'content-type: application/json' -H "Authorization: Bearer $APITOKEN" --data-binary $CLUSTERBODY --insecure)
