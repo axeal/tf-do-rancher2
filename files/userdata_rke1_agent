@@ -1,5 +1,5 @@
 #!/bin/bash -x
-export curlimage=appropriate/curl
+export curlimage=curlimages/curl
 export jqimage=ghcr.io/jqlang/jq
 export rancher_server_ip='${server_address}'
 

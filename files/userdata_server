@@ -1,6 +1,6 @@
 #!/bin/bash
 set -x
-export curlimage=appropriate/curl
+export curlimage=curlimages/curl
 export jqimage=ghcr.io/jqlang/jq
 export semver2_version=1.0.5
 
