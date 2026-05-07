@@ -39,7 +39,7 @@ for image in $curlimage $jqimage $rancherimage; do
 done
 
 # Start Rancher container
-docker run -d -e CATTLE_BOOTSTRAP_PASSWORD=bootstrapPassword -e AUDIT_LEVEL=${audit_level} --privileged --restart=unless-stopped -p 80:80 -p 443:443 -v /root/rancher:/var/lib/rancher --name rancher-server $rancherimage ${rancher_args}
+docker run -d -e CATTLE_BOOTSTRAP_PASSWORD=bootstrapPassword -e AUDIT_LOG_ENABLED=true -e AUDIT_LEVEL=${audit_level} --privileged --restart=unless-stopped -p 80:80 -p 443:443 -v /root/rancher:/var/lib/rancher --name rancher-server $rancherimage ${rancher_args}
 
 while true; do
   docker run --rm --net=host $curlimage -sLk https://127.0.0.1/ping && sleep 10 && break
