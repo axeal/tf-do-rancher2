@@ -4,6 +4,7 @@ metadata:
   namespace: fleet-default
 spec:
   rkeConfig:
+    chartValues: {}
     machineGlobalConfig: {}
     upgradeStrategy:
       controlPlaneConcurrency: 10%
