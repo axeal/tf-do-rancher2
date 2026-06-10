@@ -7,7 +7,7 @@ variable "prefix" {
 }
 
 variable "rancher_version" {
-  default = "v2.11.4"
+  default = "v2.14.2"
 }
 
 variable "audit_level" {
@@ -115,11 +115,11 @@ variable "tools_size" {
 }
 
 variable "docker_version_server" {
-  default = "24.0"
+  default = "26.0"
 }
 
 variable "docker_version_agent" {
-  default = "24.0"
+  default = "26.0"
 }
 
 variable "docker_root" {
@@ -139,15 +139,15 @@ variable "rke1_cni" {
 }
 
 variable "image_server" {
-  default = "ubuntu-22-04-x64"
+  default = "ubuntu-24-04-x64"
 }
 
 variable "image_agent" {
-  default = "ubuntu-22-04-x64"
+  default = "ubuntu-24-04-x64"
 }
 
 variable "image_tools" {
-  default = "ubuntu-22-04-x64"
+  default = "ubuntu-24-04-x64"
 }
 
 variable "user_server" {

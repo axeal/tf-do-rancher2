@@ -11,7 +11,7 @@ prefix = "myname"
 rancher_registry = ""
 
 # rancher/rancher image tag to use
-rancher_version = "v2.11.4"
+rancher_version = "v2.14.2"
 
 # Rancher server audit log level (0-3)
 audit_level = 0
@@ -60,10 +60,10 @@ count_rke1_agent_controlplane_nodes = "0"
 count_rke1_agent_worker_nodes = "0"
 
 # Docker version of host running `rancher/rancher`
-docker_version_server = "24.0"
+docker_version_server = "26.0"
 
 # Docker version of RKE1 nodes
-docker_version_agent = "24.0"
+docker_version_agent = "26.0"
 
 # Docker root on RKE1 nodes
 docker_root = ""
@@ -91,13 +91,13 @@ worker_size = "s-4vcpu-8gb"
 tools_size = "s-4vcpu-8gb"
 
 # Image of host running `rancher/rancher`
-image_server = "ubuntu-22-04-x64"
+image_server = "ubuntu-24-04-x64"
 
 # Image of host being added to a cluster (running `rancher/rancher-agent`)
-image_agent = "ubuntu-22-04-x64"
+image_agent = "ubuntu-24-04-x64"
 
 # Image for host running tools
-image_tools = "ubuntu-22-04-x64"
+image_tools = "ubuntu-24-04-x64"
 
 ## User for server image
 user_server = "root"
