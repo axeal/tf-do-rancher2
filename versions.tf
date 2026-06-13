@@ -3,13 +3,13 @@ terraform {
   required_version = ">= 0.13"
   required_providers {
     digitalocean = {
-      source = "digitalocean/digitalocean"
+      source = "registry.opentofu.org/digitalocean/digitalocean"
     }
     local = {
-      source = "hashicorp/local"
+      source = "registry.opentofu.org/hashicorp/local"
     }
     time = {
-      source = "hashicorp/time"
+      source = "registry.opentofu.org/hashicorp/time"
     }
   }
 }
